@@ -16,11 +16,15 @@
 #define  DATAOUT 12    // Connect to Serial Data Input (SDI) Pin 5
 #define  VCC      8    // Connect to VCC Pin 8
 
-#define	 BUZZ    A5    // Indicator pin
+#define	 ALERT   A5    // Indicator pin
 
-int targetValue = HFUSE;
+int targetHFUSE = HFUSE;
 
 void setup() {
+  // Initialize output pins as needed
+  digitalWrite(RST, HIGH);  // Level shifter is inverting, this shuts off 12V
+  digitalWrite(ALERT, HIGH);
+
 	// Set up control lines for HV programming
 	pinMode(VCC, OUTPUT);
 	pinMode(RST, OUTPUT);
@@ -30,14 +34,9 @@ void setup() {
 	pinMode(DATAIN, OUTPUT);  // configured as input later when programming
 
 	// Buzzer / beeper / LED
-	pinMode(BUZZ, OUTPUT);
-
-	digitalWrite(BUZZ, HIGH);
-	delay(50);
-	digitalWrite(BUZZ, LOW);
-
-	// Initialize output pins as needed
-	digitalWrite(RST, HIGH);  // Level shifter is inverting, this shuts off 12V
+	pinMode(ALERT, OUTPUT);
+	delay(150);
+	digitalWrite(ALERT, LOW);
 
 	// start serial port at 9600 bps:
 	Serial.begin(9600);
@@ -47,13 +46,13 @@ void loop() {
 
 	switch (establishContact()) {
 		case 49:
-			targetValue = HFUSE;
+			targetHFUSE = HFUSE;
 			break;
 		case 50:
-			targetValue = 0x5F;
+			targetHFUSE = 0x5F;
 			break;
 		default:
-			targetValue = HFUSE;
+			targetHFUSE = HFUSE;
 	}
 
 	Serial.println("Entering programming Mode\n");
@@ -78,51 +77,45 @@ void loop() {
 
 	//Write hfuse if not already the value we want 0xDF
 	//(to allow RST on pin 1)
-	if (hFuse != targetValue) {
+	if (hFuse != targetHFUSE) {
 
 		/*
 		//Write lock
 		delay(1000);
 		Serial.println("Writing lock\n");
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x20, 0x4C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0xFF, 0x2C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x64);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6C);
+		shiftOut(MSBFIRST, 0x20, 0x4C);
+		shiftOut(MSBFIRST, 0xFF, 0x2C);
+		shiftOut(MSBFIRST, 0x00, 0x64);
+		shiftOut(MSBFIRST, 0x00, 0x6C);
 
 		//Write efuse
 		delay(1000);
 		Serial.println("Writing efuse\n");
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x40, 0x4C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0xFF, 0x2C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x66);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6E);
+		shiftOut(MSBFIRST, 0x40, 0x4C);
+		shiftOut(MSBFIRST, 0xFF, 0x2C);
+		shiftOut(MSBFIRST, 0x00, 0x66);
+		shiftOut(MSBFIRST, 0x00, 0x6E);
 		*/
 
 		delay(1000);
 		Serial.print("Writing hfuse as ");
-		Serial.println(targetValue, HEX);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x40, 0x4C);
-
-		// The default RESET functionality
-		//shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, HFUSE, 0x2C);
-
-		// this turns the RST pin 1 into a (weak) IO port
-		//shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x5F, 0x2C);
+		Serial.println(targetHFUSE, HEX);
+		shiftOut(MSBFIRST, 0x40, 0x4C);
 
 		// User selected option
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, targetValue, 0x2C);
+		shiftOut(MSBFIRST, targetHFUSE, 0x2C);
 
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x74);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x7C);
+		shiftOut(MSBFIRST, 0x00, 0x74);
+		shiftOut(MSBFIRST, 0x00, 0x7C);
 	}
 
 	//Write lfuse
 	delay(1000);
 	Serial.println("Writing lfuse\n");
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x40, 0x4C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, LFUSE, 0x2C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x64);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6C);
+	shiftOut(MSBFIRST, 0x40, 0x4C);
+	shiftOut(MSBFIRST, LFUSE, 0x2C);
+	shiftOut(MSBFIRST, 0x00, 0x64);
+	shiftOut(MSBFIRST, 0x00, 0x6C);
 
 	// Confirm new state of play
 	hFuse = readFuses();
@@ -132,11 +125,11 @@ void loop() {
 	digitalWrite(RST, HIGH);   //Turn off 12v
 
 	// Let user know we're done
-	digitalWrite(BUZZ, HIGH);
+	digitalWrite(ALERT, HIGH);
 	delay(50);
-	digitalWrite(BUZZ, LOW);
+	digitalWrite(ALERT, LOW);
 	delay(50);
-	digitalWrite(BUZZ, HIGH);
+	digitalWrite(ALERT, HIGH);
 
 	Serial.println("\nProgramming complete. Press RESET to run again.");
 	while (1==1){};
@@ -161,7 +154,7 @@ int establishContact() {
 	return reply;
 }
 
-int shiftOut2(uint8_t dataPin, uint8_t dataPin1, uint8_t clockPin, uint8_t bitOrder, byte val, byte val1) {
+int shiftOut(uint8_t bitOrder, byte val, byte val1) {
 	int i;
 	int inBits = 0;
 	//Wait until DATAIN goes high
@@ -172,33 +165,33 @@ int shiftOut2(uint8_t dataPin, uint8_t dataPin1, uint8_t clockPin, uint8_t bitOr
 	//Start bit
 	digitalWrite(DATAOUT, LOW);
 	digitalWrite(INSTOUT, LOW);
-	digitalWrite(clockPin, HIGH);
-	digitalWrite(clockPin, LOW);
+	digitalWrite(CLKOUT, HIGH);
+	digitalWrite(CLKOUT, LOW);
 
 	for (i = 0; i < 8; i++) {
 
 		if (bitOrder == LSBFIRST) {
-			digitalWrite(dataPin, !!(val & (1 << i)));
-			digitalWrite(dataPin1, !!(val1 & (1 << i)));
+			digitalWrite(DATAOUT, !!(val & (1 << i)));
+			digitalWrite(INSTOUT, !!(val1 & (1 << i)));
 		}
 		else {
-			digitalWrite(dataPin, !!(val & (1 << (7 - i))));
-			digitalWrite(dataPin1, !!(val1 & (1 << (7 - i))));
+			digitalWrite(DATAOUT, !!(val & (1 << (7 - i))));
+			digitalWrite(INSTOUT, !!(val1 & (1 << (7 - i))));
 		}
 		inBits <<= 1;
 		inBits |= digitalRead(DATAIN);
-		digitalWrite(clockPin, HIGH);
-		digitalWrite(clockPin, LOW);
+		digitalWrite(CLKOUT, HIGH);
+		digitalWrite(CLKOUT, LOW);
 
 	}
 
 	//End bits
 	digitalWrite(DATAOUT, LOW);
 	digitalWrite(INSTOUT, LOW);
-	digitalWrite(clockPin, HIGH);
-	digitalWrite(clockPin, LOW);
-	digitalWrite(clockPin, HIGH);
-	digitalWrite(clockPin, LOW);
+	digitalWrite(CLKOUT, HIGH);
+	digitalWrite(CLKOUT, LOW);
+	digitalWrite(CLKOUT, HIGH);
+	digitalWrite(CLKOUT, LOW);
 
 	return inBits;
 }
@@ -211,41 +204,41 @@ int readFuses() {
 	Serial.print("signature reads as");
 	for (int b = 0; b <= 2; b++)
 	{
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x08, 0x4C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, b, 0x0C);
-		shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x68);
-		inData = shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6C);
+		shiftOut(MSBFIRST, 0x08, 0x4C);
+		shiftOut(MSBFIRST, b, 0x0C);
+		shiftOut(MSBFIRST, 0x00, 0x68);
+		inData = shiftOut(MSBFIRST, 0x00, 0x6C);
 		Serial.print(" ");
 		Serial.print(inData, HEX);
 	}
 	Serial.println();
 
 	//Read lock
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x04, 0x4C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x78);
-	inData = shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x7C);
+	shiftOut(MSBFIRST, 0x04, 0x4C);
+	shiftOut(MSBFIRST, 0x00, 0x78);
+	inData = shiftOut(MSBFIRST, 0x00, 0x7C);
 	Serial.print("lock reads as ");
 	Serial.println(inData, HEX);
 
 	//Read lfuse
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x04, 0x4C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x68);
-	inData = shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6C);
+	shiftOut(MSBFIRST, 0x04, 0x4C);
+	shiftOut(MSBFIRST, 0x00, 0x68);
+	inData = shiftOut(MSBFIRST, 0x00, 0x6C);
 	Serial.print("lfuse reads as ");
 	Serial.println(inData, HEX);
 
 	//Read hfuse
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x04, 0x4C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x7A);
-	inData = shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x7E);
+	shiftOut(MSBFIRST, 0x04, 0x4C);
+	shiftOut(MSBFIRST, 0x00, 0x7A);
+	inData = shiftOut(MSBFIRST, 0x00, 0x7E);
 	Serial.print("hfuse reads as ");
 	Serial.println(inData, HEX);
 	int hFuse = inData;
 
 	//Read efuse
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x04, 0x4C);
-	shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6A);
-	inData = shiftOut2(DATAOUT, INSTOUT, CLKOUT, MSBFIRST, 0x00, 0x6E);
+	shiftOut(MSBFIRST, 0x04, 0x4C);
+	shiftOut(MSBFIRST, 0x00, 0x6A);
+	inData = shiftOut(MSBFIRST, 0x00, 0x6E);
 	Serial.print("efuse reads as ");
 	Serial.println(inData, HEX);
 	Serial.println();
