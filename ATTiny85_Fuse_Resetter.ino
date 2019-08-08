@@ -40,9 +40,12 @@ typedef enum fuseState
 #define  ALERT   A5    // Indicator pin
 #define  PROG    A4    // Programming button input pin
 
-// Fuse configurations (Defaults for ATtiny25/45/85)
+// Fuse configurations
 #define FUSE_MASK_RSTDISBL 0x80
+// Defaults for ATtiny25/45/85
 fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFE, 0xFF };
+//// Defaults for Digispark ATtiny85
+//fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xDD, 0xE1, 0xFE, 0xFF };
 fuseType actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
 
 void setup()
@@ -64,7 +67,7 @@ void setup()
 
   // Buzzer / beeper / LED
   pinMode(ALERT, OUTPUT);
-  delay(200);
+  delay(500);
   digitalWrite(ALERT, LOW);
   delay(1000);
 
@@ -101,6 +104,8 @@ void loop()
   }
 
   readFuses(actualFuses);   // Read the fuses and populate array
+  delay(500);
+  digitalWrite(ALERT, HIGH);
 
   switch (establishContact())
   {
@@ -201,18 +206,13 @@ void loop()
 
   // Confirm new state of play
   Serial.println("");
+  delay(1000);
   readFuses(actualFuses);
+  digitalWrite(ALERT, LOW);
 
   digitalWrite(CLKOUT, LOW);
   digitalWrite(VCC, LOW);
   digitalWrite(RST, HIGH);   //Turn off 12v
-
-  // Indicate that we are done
-  digitalWrite(ALERT, HIGH);
-  delay(200);
-  digitalWrite(ALERT, LOW);
-  delay(200);
-  digitalWrite(ALERT, HIGH);
 
   Serial.println("Programming complete. Press RESET to run again.");
   while (true) {}
@@ -369,6 +369,30 @@ void readFuses(fuseType fuses[])
   Serial.println(fuses[FUSE_T_LOCK], HEX);
 
   Serial.println();
+
+  // Indicate the state of the fuses with the indicator LED
+  fuseState s = 0;
+  bool resetEnabled = actualFuses[FUSE_T_HFUSE] & FUSE_MASK_RSTDISBL;
+  if (resetEnabled)
+  {
+    s = FUSE_S_DEFAULT;
+    for (int f = 0; f < FUSE_T_SIZEOF; f++)
+    {
+      if (defaultFuses[f] != actualFuses[f]) s = FUSE_S_RESET_EN;
+    }
+  }
+  else s = FUSE_S_RESET_GPIO;
+
+  while (s > 0)
+  {
+    digitalWrite(ALERT, LOW);
+    delay(400);
+    digitalWrite(ALERT, HIGH);
+    delay(100);
+    s = s - 1;
+  }
+  digitalWrite(ALERT, LOW);
+  delay(500);
 }
 
 // A fatal error from which the program never returns.
