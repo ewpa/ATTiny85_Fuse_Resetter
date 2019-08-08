@@ -37,42 +37,43 @@ typedef enum fuseState
 #define  DATAOUT 12    // Connect to Serial Data Input (SDI) Pin 5
 #define  VCC      8    // Connect to VCC Pin 8
 
-#define	 ALERT   A5    // Indicator pin
-#define	 PROG    A4    // Programming button inout pin
+#define  ALERT   A5    // Indicator pin
+#define  PROG    A4    // Programming button inout pin
 
 // Fuse configurations (Defaults for ATtiny25/45/85)
 #define FUSE_MASK_RSTDISBL 0x80
 fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xFF, 0xDF, 0x62, 0xFE };
 fuseType actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
 
-void setup() {
+void setup()
+{
   // Initialize output pins as needed
   digitalWrite(RST, HIGH);  // Level shifter is inverting, this shuts off 12V
   digitalWrite(ALERT, HIGH);
 
-	// Set up control lines for HV programming
-	pinMode(VCC, OUTPUT);
-	pinMode(RST, OUTPUT);
-	pinMode(DATAOUT, OUTPUT);
-	pinMode(INSTOUT, OUTPUT);
-	pinMode(CLKOUT, OUTPUT);
-	pinMode(DATAIN, OUTPUT);  // configured as input later when programming
+  // Set up control lines for HV programming
+  pinMode(VCC, OUTPUT);
+  pinMode(RST, OUTPUT);
+  pinMode(DATAOUT, OUTPUT);
+  pinMode(INSTOUT, OUTPUT);
+  pinMode(CLKOUT, OUTPUT);
+  pinMode(DATAIN, OUTPUT);  // configured as input later when programming
 
   // Programming pin
   pinMode(PROG, INPUT_PULLUP);
 
-	// Buzzer / beeper / LED
-	pinMode(ALERT, OUTPUT);
+  // Buzzer / beeper / LED
+  pinMode(ALERT, OUTPUT);
   delay(200);
-	digitalWrite(ALERT, LOW);
+  digitalWrite(ALERT, LOW);
   delay(1000);
 
-	// start serial port at 9600 bps:
-	Serial.begin(9600);
+  // start serial port at 9600 bps:
+  Serial.begin(9600);
 }
 
-void loop() {
-
+void loop()
+{
   Serial.println("Turn on the 12 volt power\n");
   Serial.println("Entering programming Mode\n");
 
@@ -101,7 +102,8 @@ void loop() {
 
   readFuses(actualFuses);   // Read the fuses and populate array
 
-  switch (establishContact()) {
+  switch (establishContact())
+  {
     case FUSE_S_RESET_EN :
       for (int f = 0; f < FUSE_T_SIZEOF; f++) targetFuses[f] = actualFuses[f];
       targetFuses[FUSE_T_HFUSE] |= FUSE_MASK_RSTDISBL;
@@ -128,12 +130,12 @@ void loop() {
   Serial.print(targetFuses[FUSE_T_LOCK], HEX);
   if (actualFuses[FUSE_T_LOCK] != targetFuses[FUSE_T_LOCK])
   {
-		//Write lock
-		Serial.print(" updating...");
-		shiftOut(MSBFIRST, 0x20, 0x4C);
-		shiftOut(MSBFIRST, 0xFF, 0x2C);
-		shiftOut(MSBFIRST, 0x00, 0x64);
-		shiftOut(MSBFIRST, 0x00, 0x6C);
+    //Write lock
+    Serial.print(" updating...");
+    shiftOut(MSBFIRST, 0x20, 0x4C);
+    shiftOut(MSBFIRST, 0xFF, 0x2C);
+    shiftOut(MSBFIRST, 0x00, 0x64);
+    shiftOut(MSBFIRST, 0x00, 0x6C);
     Serial.println("done");
   }
   else
@@ -147,12 +149,12 @@ void loop() {
   Serial.print(targetFuses[FUSE_T_EFUSE], HEX);
   if (actualFuses[FUSE_T_EFUSE] != targetFuses[FUSE_T_EFUSE])
   {
-		//Write efuse
+    //Write efuse
     Serial.print(" updating...");
-		shiftOut(MSBFIRST, 0x40, 0x4C);
-		shiftOut(MSBFIRST, 0xFF, 0x2C);
-		shiftOut(MSBFIRST, 0x00, 0x66);
-		shiftOut(MSBFIRST, 0x00, 0x6E);
+    shiftOut(MSBFIRST, 0x40, 0x4C);
+    shiftOut(MSBFIRST, 0xFF, 0x2C);
+    shiftOut(MSBFIRST, 0x00, 0x66);
+    shiftOut(MSBFIRST, 0x00, 0x6E);
     Serial.println("done");
   }
   else
@@ -167,10 +169,10 @@ void loop() {
   if (actualFuses[FUSE_T_HFUSE] != targetFuses[FUSE_T_HFUSE])
   {
     Serial.print(" updating...");
-		shiftOut(MSBFIRST, 0x40, 0x4C);
-		shiftOut(MSBFIRST, targetFuses[FUSE_T_HFUSE], 0x2C);
-		shiftOut(MSBFIRST, 0x00, 0x74);
-		shiftOut(MSBFIRST, 0x00, 0x7C);
+    shiftOut(MSBFIRST, 0x40, 0x4C);
+    shiftOut(MSBFIRST, targetFuses[FUSE_T_HFUSE], 0x2C);
+    shiftOut(MSBFIRST, 0x00, 0x74);
+    shiftOut(MSBFIRST, 0x00, 0x7C);
     Serial.println("done");
   }
   else
@@ -197,56 +199,60 @@ void loop() {
     Serial.println("");
   }
 
-	// Confirm new state of play
+  // Confirm new state of play
   Serial.println("");
-	readFuses(actualFuses);
+  readFuses(actualFuses);
 
-	digitalWrite(CLKOUT, LOW);
-	digitalWrite(VCC, LOW);
-	digitalWrite(RST, HIGH);   //Turn off 12v
+  digitalWrite(CLKOUT, LOW);
+  digitalWrite(VCC, LOW);
+  digitalWrite(RST, HIGH);   //Turn off 12v
 
-	// Let user know we're done
-	digitalWrite(ALERT, HIGH);
+  // Indicate that we are done
+  digitalWrite(ALERT, HIGH);
   delay(200);
-	digitalWrite(ALERT, LOW);
+  digitalWrite(ALERT, LOW);
   delay(200);
-	digitalWrite(ALERT, HIGH);
+  digitalWrite(ALERT, HIGH);
 
   Serial.println("Programming complete. Press RESET to run again.");
-	while (1==1){};
+  while (true) {}
 }
 
-char establishContact() {
+char establishContact()
+{
   digitalWrite(ALERT, HIGH);
   Serial.println("You can ENABLE the RST pin (as RST) to allow programming");
   Serial.println("or DISABLE it to turn it into a (weak) GPIO pin.\n");
   Serial.println("Press the desired number or hold the button for the desired number of seconds.");
 
-	// We must get a valid choice to proceed
-	unsigned char reply;
+  // We must get a valid choice to proceed
+  unsigned char reply;
 
-	do {
+  do
+  {
     Serial.println();
-		Serial.println("1 second  : ENABLE the RST pin (back to normal)");
-		Serial.println("2 seconds : DISABLE the RST pin (make it a GPIO pin)");
-		Serial.println("3 seconds : Revert to factory defaults");
-		int buttonPressedMs = 0;
-		bool buttonState, buttonReleased = false;
-		while (!Serial.available() && !buttonReleased) {
-			// Wait for user input
-			delay(20);
-			buttonState = !digitalRead(PROG);
-			if (buttonPressedMs > 0) digitalWrite(ALERT, LOW);
-			if (!buttonState && buttonPressedMs > 0)
-				buttonReleased = true;
-			else buttonPressedMs += buttonState * 20;
-			if (buttonPressedMs%1000 == 0 && buttonPressedMs > 0)
-			{
-				Serial.print(buttonPressedMs/1000);
-				Serial.print("...");
-				digitalWrite(ALERT, HIGH);
-			}
-		}
+    Serial.println("1 second  : ENABLE the RST pin (back to normal)");
+    Serial.println("2 seconds : DISABLE the RST pin (make it a GPIO pin)");
+    Serial.println("3 seconds : Revert to factory defaults");
+
+    int buttonPressedMs = 0;
+    bool buttonState, buttonReleased = false;
+    while (!Serial.available() && !buttonReleased)
+    {
+      // Wait for user input
+      delay(20);
+      buttonState = !digitalRead(PROG);
+      if (buttonPressedMs > 0) digitalWrite(ALERT, LOW);
+      if (!buttonState && buttonPressedMs > 0)
+        buttonReleased = true;
+      else buttonPressedMs += buttonState * 20;
+      if (buttonPressedMs%1000 == 0 && buttonPressedMs > 0)
+      {
+        Serial.print(buttonPressedMs/1000);
+        Serial.print("...");
+        digitalWrite(ALERT, HIGH);
+      }
+    }
 
     if (buttonPressedMs >= 1000)
     {
@@ -255,53 +261,54 @@ char establishContact() {
     }
     else if (Serial.available()) reply = Serial.read() - '0';
     else reply = 0;
-	}
-	while (!(reply >= 1 && reply < FUSE_S_END));
+  }
+  while (!(reply >= 1 && reply < FUSE_S_END));
 
   digitalWrite(ALERT, LOW);
-	return reply;
+  return reply;
 }
 
-int shiftOut(uint8_t bitOrder, byte val, byte val1) {
-	int i;
-	int inBits = 0;
-	//Wait until DATAIN goes high
-	while (!digitalRead(DATAIN)) {
-		// Nothing to do here
-	}
+int shiftOut(uint8_t bitOrder, byte val, byte val1)
+{
+  int i;
+  int inBits = 0;
+  //Wait until DATAIN goes high
+  while (!digitalRead(DATAIN)) {}
 
-	//Start bit
-	digitalWrite(DATAOUT, LOW);
-	digitalWrite(INSTOUT, LOW);
-	digitalWrite(CLKOUT, HIGH);
-	digitalWrite(CLKOUT, LOW);
+  //Start bit
+  digitalWrite(DATAOUT, LOW);
+  digitalWrite(INSTOUT, LOW);
+  digitalWrite(CLKOUT, HIGH);
+  digitalWrite(CLKOUT, LOW);
 
-	for (i = 0; i < 8; i++) {
+  for (i = 0; i < 8; i++)
+  {
+    if (bitOrder == LSBFIRST)
+    {
+      digitalWrite(DATAOUT, !!(val & (1 << i)));
+      digitalWrite(INSTOUT, !!(val1 & (1 << i)));
+    }
+    else
+    {
+      digitalWrite(DATAOUT, !!(val & (1 << (7 - i))));
+      digitalWrite(INSTOUT, !!(val1 & (1 << (7 - i))));
+    }
+    inBits <<= 1;
+    inBits |= digitalRead(DATAIN);
+    digitalWrite(CLKOUT, HIGH);
+    digitalWrite(CLKOUT, LOW);
 
-		if (bitOrder == LSBFIRST) {
-			digitalWrite(DATAOUT, !!(val & (1 << i)));
-			digitalWrite(INSTOUT, !!(val1 & (1 << i)));
-		}
-		else {
-			digitalWrite(DATAOUT, !!(val & (1 << (7 - i))));
-			digitalWrite(INSTOUT, !!(val1 & (1 << (7 - i))));
-		}
-		inBits <<= 1;
-		inBits |= digitalRead(DATAIN);
-		digitalWrite(CLKOUT, HIGH);
-		digitalWrite(CLKOUT, LOW);
+  }
 
-	}
+  //End bits
+  digitalWrite(DATAOUT, LOW);
+  digitalWrite(INSTOUT, LOW);
+  digitalWrite(CLKOUT, HIGH);
+  digitalWrite(CLKOUT, LOW);
+  digitalWrite(CLKOUT, HIGH);
+  digitalWrite(CLKOUT, LOW);
 
-	//End bits
-	digitalWrite(DATAOUT, LOW);
-	digitalWrite(INSTOUT, LOW);
-	digitalWrite(CLKOUT, HIGH);
-	digitalWrite(CLKOUT, LOW);
-	digitalWrite(CLKOUT, HIGH);
-	digitalWrite(CLKOUT, LOW);
-
-	return inBits;
+  return inBits;
 }
 
 // Returns the value of the device signature
@@ -329,39 +336,39 @@ void readFuses(fuseType fuses[])
   int inData = 0;        // incoming serial byte AVR
   Serial.println("Reading locks and fuses");
 
-	//Read lock
+  //Read lock
   Serial.print("lock....");
-	shiftOut(MSBFIRST, 0x04, 0x4C);
-	shiftOut(MSBFIRST, 0x00, 0x78);
-	inData = shiftOut(MSBFIRST, 0x00, 0x7C);
+  shiftOut(MSBFIRST, 0x04, 0x4C);
+  shiftOut(MSBFIRST, 0x00, 0x78);
+  inData = shiftOut(MSBFIRST, 0x00, 0x7C);
   fuses[FUSE_T_LOCK] = inData;
   Serial.println(fuses[FUSE_T_LOCK], HEX);
 
-	//Read lfuse
+  //Read lfuse
   Serial.print("lfuse...");
-	shiftOut(MSBFIRST, 0x04, 0x4C);
-	shiftOut(MSBFIRST, 0x00, 0x68);
-	inData = shiftOut(MSBFIRST, 0x00, 0x6C);
+  shiftOut(MSBFIRST, 0x04, 0x4C);
+  shiftOut(MSBFIRST, 0x00, 0x68);
+  inData = shiftOut(MSBFIRST, 0x00, 0x6C);
   fuses[FUSE_T_LFUSE] = inData;
   Serial.println(fuses[FUSE_T_LFUSE], HEX);
 
-	//Read hfuse
+  //Read hfuse
   Serial.print("hfuse...");
-	shiftOut(MSBFIRST, 0x04, 0x4C);
-	shiftOut(MSBFIRST, 0x00, 0x7A);
-	inData = shiftOut(MSBFIRST, 0x00, 0x7E);
+  shiftOut(MSBFIRST, 0x04, 0x4C);
+  shiftOut(MSBFIRST, 0x00, 0x7A);
+  inData = shiftOut(MSBFIRST, 0x00, 0x7E);
   fuses[FUSE_T_HFUSE] = inData;
   Serial.println(fuses[FUSE_T_HFUSE], HEX);
 
-	//Read efuse
+  //Read efuse
   Serial.print("efuse...");
-	shiftOut(MSBFIRST, 0x04, 0x4C);
-	shiftOut(MSBFIRST, 0x00, 0x6A);
-	inData = shiftOut(MSBFIRST, 0x00, 0x6E);
+  shiftOut(MSBFIRST, 0x04, 0x4C);
+  shiftOut(MSBFIRST, 0x00, 0x6A);
+  inData = shiftOut(MSBFIRST, 0x00, 0x6E);
   fuses[FUSE_T_EFUSE] = inData;
   Serial.println(fuses[FUSE_T_EFUSE], HEX);
 
-	Serial.println();
+  Serial.println();
 }
 
 // A fatal error from which the program never returns.
