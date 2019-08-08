@@ -43,10 +43,10 @@ typedef enum fuseState
 // Fuse configurations
 #define FUSE_MASK_RSTDISBL 0x80
 // Defaults for ATtiny25/45/85
-fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFE, 0xFF };
+uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFE, 0xFF };
 //// Defaults for Digispark ATtiny85
-//fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xDD, 0xE1, 0xFE, 0xFF };
-fuseType actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
+//uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDD, 0xE1, 0xFE, 0xFF };
+uint8_t actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
 
 void setup()
 {
@@ -110,19 +110,23 @@ void loop()
   switch (establishContact())
   {
     case FUSE_S_RESET_EN :
-      for (int f = 0; f < FUSE_T_SIZEOF; f++) targetFuses[f] = actualFuses[f];
+      for (uint8_t f = 0; f < FUSE_T_SIZEOF; f++)
+        targetFuses[f] = actualFuses[f];
       targetFuses[FUSE_T_HFUSE] |= FUSE_MASK_RSTDISBL;
       break;
     case FUSE_S_RESET_GPIO :
-      for (int f = 0; f < FUSE_T_SIZEOF; f++) targetFuses[f] = actualFuses[f];
+      for (uint8_t f = 0; f < FUSE_T_SIZEOF; f++)
+        targetFuses[f] = actualFuses[f];
       targetFuses[FUSE_T_HFUSE]
         = targetFuses[FUSE_T_HFUSE] & ~FUSE_MASK_RSTDISBL;
       break;
     case FUSE_S_DEFAULT :
-      for (int f = 0; f < FUSE_T_SIZEOF; f++) targetFuses[f] = defaultFuses[f];
+      for (uint8_t f = 0; f < FUSE_T_SIZEOF; f++)
+        targetFuses[f] = defaultFuses[f];
       break;
     default:
-      for (int f = 0; f < FUSE_T_SIZEOF; f++) targetFuses[f] = actualFuses[f];
+      for (uint8_t f = 0; f < FUSE_T_SIZEOF; f++)
+        targetFuses[f] = actualFuses[f];
   }
 
   Serial.println("");
@@ -223,7 +227,8 @@ char establishContact()
   digitalWrite(ALERT, HIGH);
   Serial.println("You can ENABLE the RST pin (as RST) to allow programming");
   Serial.println("or DISABLE it to turn it into a (weak) GPIO pin.\n");
-  Serial.println("Press the desired number or hold the button for the desired number of seconds.");
+  Serial.println("Press the desired number or hold the button for the desired "
+                 "number of seconds.");
 
   // We must get a valid choice to proceed
   unsigned char reply;
@@ -331,7 +336,7 @@ uint32_t readSignature()
 }
 
 // Populates the values of the fuses and lock bits
-void readFuses(fuseType fuses[])
+void readFuses(uint8_t fuses[])
 {
   int inData = 0;        // incoming serial byte AVR
   Serial.println("Reading locks and fuses");
@@ -341,7 +346,7 @@ void readFuses(fuseType fuses[])
   shiftOut(MSBFIRST, 0x04, 0x4C);
   shiftOut(MSBFIRST, 0x00, 0x7A);
   inData = shiftOut(MSBFIRST, 0x00, 0x7E);
-  fuses[FUSE_T_HFUSE] = inData;
+  fuses[FUSE_T_HFUSE] = (fuseType)inData;
   Serial.println(fuses[FUSE_T_HFUSE], HEX);
 
   //Read lfuse
@@ -349,7 +354,7 @@ void readFuses(fuseType fuses[])
   shiftOut(MSBFIRST, 0x04, 0x4C);
   shiftOut(MSBFIRST, 0x00, 0x68);
   inData = shiftOut(MSBFIRST, 0x00, 0x6C);
-  fuses[FUSE_T_LFUSE] = inData;
+  fuses[FUSE_T_LFUSE] = (fuseType)inData;
   Serial.println(fuses[FUSE_T_LFUSE], HEX);
 
   //Read efuse
@@ -357,7 +362,7 @@ void readFuses(fuseType fuses[])
   shiftOut(MSBFIRST, 0x04, 0x4C);
   shiftOut(MSBFIRST, 0x00, 0x6A);
   inData = shiftOut(MSBFIRST, 0x00, 0x6E);
-  fuses[FUSE_T_EFUSE] = inData;
+  fuses[FUSE_T_EFUSE] = (fuseType)inData;
   Serial.println(fuses[FUSE_T_EFUSE], HEX);
 
   //Read lock
@@ -365,13 +370,13 @@ void readFuses(fuseType fuses[])
   shiftOut(MSBFIRST, 0x04, 0x4C);
   shiftOut(MSBFIRST, 0x00, 0x78);
   inData = shiftOut(MSBFIRST, 0x00, 0x7C);
-  fuses[FUSE_T_LOCK] = inData;
+  fuses[FUSE_T_LOCK] = (fuseType)inData;
   Serial.println(fuses[FUSE_T_LOCK], HEX);
 
   Serial.println();
 
   // Indicate the state of the fuses with the indicator LED
-  fuseState s = 0;
+  fuseState s = (fuseState)0;
   bool resetEnabled = actualFuses[FUSE_T_HFUSE] & FUSE_MASK_RSTDISBL;
   if (resetEnabled)
   {
@@ -389,7 +394,7 @@ void readFuses(fuseType fuses[])
     delay(400);
     digitalWrite(ALERT, HIGH);
     delay(100);
-    s = s - 1;
+    s = (fuseState)(s - 1);
   }
   digitalWrite(ALERT, LOW);
   delay(500);
