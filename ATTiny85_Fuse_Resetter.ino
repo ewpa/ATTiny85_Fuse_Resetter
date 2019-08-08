@@ -14,14 +14,14 @@
 // The fuse types we recognize
 typedef enum fuseType
 {
-  FUSE_T_LOCK,         // Lock bits
   FUSE_T_HFUSE,        // High fuse bits
   FUSE_T_LFUSE,        // Low fuse bits
   FUSE_T_EFUSE,        // Extended fuse bits
+  FUSE_T_LOCK,         // Lock bits
   FUSE_T_SIZEOF
 };
 
-// The three states we allow fuses to be set
+// The three states we allow fuses to be set, and their option numbers
 typedef enum fuseState
 {
   FUSE_S_RESET_EN = 1, // Pin 1 as RESET, otherwise unchanged
@@ -38,11 +38,11 @@ typedef enum fuseState
 #define  VCC      8    // Connect to VCC Pin 8
 
 #define  ALERT   A5    // Indicator pin
-#define  PROG    A4    // Programming button inout pin
+#define  PROG    A4    // Programming button input pin
 
 // Fuse configurations (Defaults for ATtiny25/45/85)
 #define FUSE_MASK_RSTDISBL 0x80
-fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xFF, 0xDF, 0x62, 0xFE };
+fuseType defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFE, 0xFF };
 fuseType actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
 
 void setup()
@@ -124,44 +124,6 @@ void loop()
 
   //Write fuse if not already the value we want
 
-  Serial.print("lock  current=");
-  Serial.print(actualFuses[FUSE_T_LOCK], HEX);
-  Serial.print(" target=");
-  Serial.print(targetFuses[FUSE_T_LOCK], HEX);
-  if (actualFuses[FUSE_T_LOCK] != targetFuses[FUSE_T_LOCK])
-  {
-    //Write lock
-    Serial.print(" updating...");
-    shiftOut(MSBFIRST, 0x20, 0x4C);
-    shiftOut(MSBFIRST, 0xFF, 0x2C);
-    shiftOut(MSBFIRST, 0x00, 0x64);
-    shiftOut(MSBFIRST, 0x00, 0x6C);
-    Serial.println("done");
-  }
-  else
-  {
-    Serial.println("");
-  }
-
-  Serial.print("efuse current=");
-  Serial.print(actualFuses[FUSE_T_EFUSE], HEX);
-  Serial.print(" target=");
-  Serial.print(targetFuses[FUSE_T_EFUSE], HEX);
-  if (actualFuses[FUSE_T_EFUSE] != targetFuses[FUSE_T_EFUSE])
-  {
-    //Write efuse
-    Serial.print(" updating...");
-    shiftOut(MSBFIRST, 0x40, 0x4C);
-    shiftOut(MSBFIRST, 0xFF, 0x2C);
-    shiftOut(MSBFIRST, 0x00, 0x66);
-    shiftOut(MSBFIRST, 0x00, 0x6E);
-    Serial.println("done");
-  }
-  else
-  {
-    Serial.println("");
-  }
-
   Serial.print("hfuse current=");
   Serial.print(actualFuses[FUSE_T_HFUSE], HEX);
   Serial.print(" target=");
@@ -190,6 +152,44 @@ void loop()
     Serial.print(" updating...");
     shiftOut(MSBFIRST, 0x40, 0x4C);
     shiftOut(MSBFIRST, targetFuses[FUSE_T_LFUSE], 0x2C);
+    shiftOut(MSBFIRST, 0x00, 0x64);
+    shiftOut(MSBFIRST, 0x00, 0x6C);
+    Serial.println("done");
+  }
+  else
+  {
+    Serial.println("");
+  }
+
+  Serial.print("efuse current=");
+  Serial.print(actualFuses[FUSE_T_EFUSE], HEX);
+  Serial.print(" target=");
+  Serial.print(targetFuses[FUSE_T_EFUSE], HEX);
+  if (actualFuses[FUSE_T_EFUSE] != targetFuses[FUSE_T_EFUSE])
+  {
+    //Write efuse
+    Serial.print(" updating...");
+    shiftOut(MSBFIRST, 0x40, 0x4C);
+    shiftOut(MSBFIRST, 0xFF, 0x2C);
+    shiftOut(MSBFIRST, 0x00, 0x66);
+    shiftOut(MSBFIRST, 0x00, 0x6E);
+    Serial.println("done");
+  }
+  else
+  {
+    Serial.println("");
+  }
+
+  Serial.print("lock  current=");
+  Serial.print(actualFuses[FUSE_T_LOCK], HEX);
+  Serial.print(" target=");
+  Serial.print(targetFuses[FUSE_T_LOCK], HEX);
+  if (actualFuses[FUSE_T_LOCK] != targetFuses[FUSE_T_LOCK])
+  {
+    //Write lock
+    Serial.print(" updating...");
+    shiftOut(MSBFIRST, 0x20, 0x4C);
+    shiftOut(MSBFIRST, 0xFF, 0x2C);
     shiftOut(MSBFIRST, 0x00, 0x64);
     shiftOut(MSBFIRST, 0x00, 0x6C);
     Serial.println("done");
@@ -336,13 +336,13 @@ void readFuses(fuseType fuses[])
   int inData = 0;        // incoming serial byte AVR
   Serial.println("Reading locks and fuses");
 
-  //Read lock
-  Serial.print("lock....");
+  //Read hfuse
+  Serial.print("hfuse...");
   shiftOut(MSBFIRST, 0x04, 0x4C);
-  shiftOut(MSBFIRST, 0x00, 0x78);
-  inData = shiftOut(MSBFIRST, 0x00, 0x7C);
-  fuses[FUSE_T_LOCK] = inData;
-  Serial.println(fuses[FUSE_T_LOCK], HEX);
+  shiftOut(MSBFIRST, 0x00, 0x7A);
+  inData = shiftOut(MSBFIRST, 0x00, 0x7E);
+  fuses[FUSE_T_HFUSE] = inData;
+  Serial.println(fuses[FUSE_T_HFUSE], HEX);
 
   //Read lfuse
   Serial.print("lfuse...");
@@ -352,14 +352,6 @@ void readFuses(fuseType fuses[])
   fuses[FUSE_T_LFUSE] = inData;
   Serial.println(fuses[FUSE_T_LFUSE], HEX);
 
-  //Read hfuse
-  Serial.print("hfuse...");
-  shiftOut(MSBFIRST, 0x04, 0x4C);
-  shiftOut(MSBFIRST, 0x00, 0x7A);
-  inData = shiftOut(MSBFIRST, 0x00, 0x7E);
-  fuses[FUSE_T_HFUSE] = inData;
-  Serial.println(fuses[FUSE_T_HFUSE], HEX);
-
   //Read efuse
   Serial.print("efuse...");
   shiftOut(MSBFIRST, 0x04, 0x4C);
@@ -367,6 +359,14 @@ void readFuses(fuseType fuses[])
   inData = shiftOut(MSBFIRST, 0x00, 0x6E);
   fuses[FUSE_T_EFUSE] = inData;
   Serial.println(fuses[FUSE_T_EFUSE], HEX);
+
+  //Read lock
+  Serial.print("lock....");
+  shiftOut(MSBFIRST, 0x04, 0x4C);
+  shiftOut(MSBFIRST, 0x00, 0x78);
+  inData = shiftOut(MSBFIRST, 0x00, 0x7C);
+  fuses[FUSE_T_LOCK] = inData;
+  Serial.println(fuses[FUSE_T_LOCK], HEX);
 
   Serial.println();
 }
