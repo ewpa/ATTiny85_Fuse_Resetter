@@ -43,7 +43,7 @@ typedef enum fuseState
 // Fuse configurations
 #define FUSE_MASK_RSTDISBL 0x80
 // Defaults for ATtiny25/45/85
-uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFE, 0xFF };
+uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFF, 0xFF };
 //// Defaults for Digispark ATtiny85
 //uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDD, 0xE1, 0xFE, 0xFF };
 uint8_t actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
