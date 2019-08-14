@@ -48,6 +48,9 @@ uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDF, 0x62, 0xFF, 0xFF };
 //uint8_t defaultFuses[FUSE_T_SIZEOF] = { 0xDD, 0xE1, 0xFE, 0xFF };
 uint8_t actualFuses[FUSE_T_SIZEOF], targetFuses[FUSE_T_SIZEOF];
 
+// Timeouts
+#define TIMEOUT_RESPONSE_MS 1000
+
 void setup()
 {
   // Initialize output pins as needed
@@ -224,7 +227,6 @@ void loop()
 
 char establishContact()
 {
-  digitalWrite(ALERT, HIGH);
   Serial.println("You can ENABLE the RST pin (as RST) to allow programming");
   Serial.println("or DISABLE it to turn it into a (weak) GPIO pin.\n");
   Serial.println("Press the desired number or hold the button for the desired "
@@ -235,6 +237,7 @@ char establishContact()
 
   do
   {
+    digitalWrite(ALERT, HIGH);
     Serial.println();
     Serial.println("1 second  : ENABLE the RST pin (back to normal)");
     Serial.println("2 seconds : DISABLE the RST pin (make it a GPIO pin)");
@@ -278,7 +281,9 @@ int shiftOut(uint8_t bitOrder, byte val, byte val1)
   int i;
   int inBits = 0;
   //Wait until DATAIN goes high
-  while (!digitalRead(DATAIN)) {}
+  unsigned long m = millis();
+  while (millis() - m < TIMEOUT_RESPONSE_MS && !digitalRead(DATAIN)) {}
+  if (!digitalRead(DATAIN)) fatalError("Timeout waiting for ATtiny response");
 
   //Start bit
   digitalWrite(DATAOUT, LOW);
@@ -403,8 +408,10 @@ void readFuses(uint8_t fuses[])
 // A fatal error from which the program never returns.
 void fatalError(String msg)
 {
+  Serial.println();
   Serial.println("*** Fatal error ***");
   Serial.println(msg);
+  Serial.println();
   Serial.println("RESET to restart");
   while (true)
   {
